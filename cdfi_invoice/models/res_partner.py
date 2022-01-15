@@ -31,7 +31,8 @@ class ResPartner(models.Model):
                    ('D10', _('Pagos por servicios educativos (colegiaturas)')),
                    ('S01', _('Sin efectos fiscales')),
                    ('CP01', _('Pagos')),
-                   ('CN01', _('Nómina')),],
+                   ('CN01', _('Nómina')),
+                   ('P01', _('Por definir')),],
         string=_('Uso CFDI (cliente)'),
     )
     regimen_fiscal = fields.Selection(

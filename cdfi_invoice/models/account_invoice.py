@@ -83,7 +83,8 @@ class AccountMove(models.Model):
                    ('D10', _('Pagos por servicios educativos (colegiaturas)')),
                    ('S01', _('Sin efectos fiscales')),
                    ('CP01', _('Pagos')),
-                   ('CN01', _('Nómina')),],
+                   ('CN01', _('Nómina')),
+                   ('P01', _('Por definir')),],
         string=_('Uso CFDI (cliente)'),
     )
     estado_factura = fields.Selection(
@@ -800,7 +801,7 @@ class AccountMove(models.Model):
                    return
 
                json_response = response.json()
-               _logger.info('something ... %s', response.text)
+               #_logger.info('something ... %s', response.text)
             except Exception as e:
                _logger.info('log de la exception ... %s', response.text)
                json_response = {}

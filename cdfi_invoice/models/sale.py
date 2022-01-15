@@ -69,7 +69,8 @@ class SaleOrder(models.Model):
                    ('D10', _('Pagos por servicios educativos (colegiaturas)')),
                    ('S01', _('Sin efectos fiscales')),
                    ('CP01', _('Pagos')),
-                   ('CN01', _('Nómina')),],
+                   ('CN01', _('Nómina')),
+                   ('P01', _('Por definir')),],
         string=_('Uso CFDI (cliente)'),
     )
     fecha_corregida = fields.Datetime(string=_('Fecha Cotizacion'), compute='_get_fecha_corregida')
