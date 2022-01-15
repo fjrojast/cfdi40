@@ -268,8 +268,12 @@ class AccountMove(models.Model):
                 continue
 
             if not line.product_id.clave_producto:
+                self.write({'proceso_timbrado': False})
+                self.env.cr.commit()
                 raise UserError(_('El producto %s no tiene clave del SAT configurado.') % (line.product_id.name))
             if not line.product_id.cat_unidad_medida.clave:
+                self.write({'proceso_timbrado': False})
+                self.env.cr.commit()
                 raise UserError(_('El producto %s no tiene unidad de medida del SAT configurado.') % (line.product_id.name))
 
             price_wo_discount = round(line.price_unit * (1 - (line.discount / 100.0)), no_decimales_prod)
@@ -282,8 +286,12 @@ class AccountMove(models.Model):
             for taxes in taxes_prod['taxes']:
                 tax = self.env['account.tax'].browse(taxes['id'])
                 if not tax.impuesto:
-                   raise UserError(_('El impusto %s no tiene clave del SAT configurado.') % (tax.name))
+                   self.write({'proceso_timbrado': False})
+                   self.env.cr.commit()
+                   raise UserError(_('El impuesto %s no tiene clave del SAT configurado.') % (tax.name))
                 if not tax.tipo_factor:
+                   self.write({'proceso_timbrado': False})
+                   self.env.cr.commit()
                    raise UserError(_('El impuesto %s no tiene tipo de factor del SAT configurado.') % (tax.name))
                 if tax.impuesto != '004':
                    key = tax['id']
@@ -437,10 +445,16 @@ class AccountMove(models.Model):
         request_params.update({'conceptos': invoice_lines})
 
         if not self.company_id.archivo_cer:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El archivo del certificado .cer no se encuentra.'))
         if not self.company_id.archivo_key:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El archivo del certificado .key no se encuentra.'))
         if not self.company_id.contrasena:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('La contraseña del certificado no se encuentra.'))
         archivo_cer = self.company_id.archivo_cer
         archivo_key = self.company_id.archivo_key
@@ -466,22 +480,40 @@ class AccountMove(models.Model):
 
     def check_cfdi_values(self):
         if not self.company_id.vat:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El emisor no tiene RFC configurado.'))
         if not self.company_id.name:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El emisor no tiene nombre configurado.'))
         if not self.partner_id.vat:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El receptor no tiene RFC configurado.'))
         if not self.uso_cfdi_id:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('La factura no tiene uso de cfdi configurado.'))
         if not self.tipo_comprobante:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El emisor no tiene tipo de comprobante configurado.'))
         if self.tipo_comprobante != 'T' and not self.methodo_pago:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('La factura no tiene método de pago configurado.'))
         if self.tipo_comprobante != 'T' and not self.forma_pago_id:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('La factura no tiene forma de pago configurado.'))
         if not self.company_id.regimen_fiscal_id:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El emisor no régimen fiscal configurado.'))
         if not self.journal_id.codigo_postal and not self.company_id.zip:
+            self.write({'proceso_timbrado': False})
+            self.env.cr.commit()
             raise UserError(_('El emisor no tiene código postal configurado.'))
 
     def _set_data_from_xml(self, xml_invoice):
@@ -554,8 +586,12 @@ class AccountMove(models.Model):
                     invoice.write({'factura_cfdi': True})
                     return True
                 else:
+                    invoice.write({'proceso_timbrado': False})
+                    self.env.cr.commit()
                     raise UserError(_('Error para timbrar factura, Factura ya generada.'))
             if invoice.estado_factura == 'factura_cancelada':
+                invoice.write({'proceso_timbrado': False})
+                self.env.cr.commit()
                 raise UserError(_('Error para timbrar factura, Factura ya generada y cancelada.'))
 
             values = invoice.to_json()
@@ -571,6 +607,8 @@ class AccountMove(models.Model):
                 else:
                     url = '%s' % ('https://itadmin.gecoerp.com/invoice/?handler=OdooHandler33')
             else:
+                invoice.write({'proceso_timbrado': False})
+                self.env.cr.commit()
                 raise UserError(_('Error, falta seleccionar el servidor de timbrado en la configuración de la compañía.'))
 
             try:
