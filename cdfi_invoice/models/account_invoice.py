@@ -154,6 +154,7 @@ class AccountMove(models.Model):
             values['fecha_factura'] = None
             values['folio_fiscal'] = None
             values['invoice_datetime'] = None
+            values['estado_factura'] = None
             values['edi_document_ids'] = None
             values['factura_cfdi'] = False
         return values
@@ -499,7 +500,7 @@ class AccountMove(models.Model):
                 'contrasena': self.company_id.contrasena,
             }})
 
-        _logger.info('xml: ', json.dumps(request_params))
+        #_logger.info('xml: ', json.dumps(request_params))
         return request_params
 
     def set_decimals(self, amount, precision):
