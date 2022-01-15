@@ -248,7 +248,7 @@ class AccountInvoice(models.Model):
         if self.currency_id.name == 'MXN':
            tipocambio = 1
         else:
-           tipocambio = self.set_decimals(1 / self.currency_id.with_context(date=self.invoice_date).rate, no_decimales_tc)
+           tipocambio = self.set_decimals(1 / self.currency_id.with_context(date=self.date_invoice).rate, no_decimales_tc)
 
         self.check_cfdi_values()
 
@@ -286,7 +286,7 @@ class AccountInvoice(models.Model):
                 },
                 'informacion': {
                       'cfdi': '4.0',
-                      'sistema': 'odoo14',
+                      'sistema': 'odoo12',
                       'version': '1',
                       'api_key': self.company_id.proveedor_timbrado,
                       'modo_prueba': self.company_id.modo_prueba,
