@@ -50,7 +50,7 @@
                 <button name="button_draft" position="before">
                     <button name="action_cfdi_generate" type="object" string="Generar CFDI"
                             attrs="{'invisible':['|','|',('state','in',('draft','cancel')), ('estado_factura','in',('factura_correcta','factura_cancelada','solicitud_rechazada')),
-                                   ('type','not in',('out_invoice', 'out_refund'))]}" 
+                                   ('type','not in',('out_invoice', 'out_refund'))]}"
                             class="oe_highlight" groups="base.group_user"/>
                     <button name="%(cdfi_invoice.reason_cancelation_sat_wizard)d"
                             type="action" 
@@ -92,4 +92,3 @@
 
 </odoo>
 
-<!--attrs="{'invisible':['|',('factura_cfdi','=',True), ('state','not in',('open', 'paid'))]}"-->

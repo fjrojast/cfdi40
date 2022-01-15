@@ -460,7 +460,7 @@ class AccountPayment(models.Model):
                                                 'res_model': self._name,
                                                 'res_id': p.id,
                                                 'type': 'binary'
-                                            })  
+                                            })
                 report = self.env['ir.actions.report']._get_report_from_name('cdfi_invoice.report_payment')
                 report_data = report.render_qweb_pdf([p.id])[0]
                 pdf_file_name = p.name.replace('/', '_') + '.pdf'
