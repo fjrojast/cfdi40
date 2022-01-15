@@ -352,7 +352,7 @@ class AccountPayment(models.Model):
 
                 'informacion': {
                       'cfdi': '4.0',
-                      'sistema': 'odoo14',
+                      'sistema': 'odoo13',
                       'version': '6',
                       'api_key': self.company_id.proveedor_timbrado,
                       'modo_prueba': self.company_id.modo_prueba,
