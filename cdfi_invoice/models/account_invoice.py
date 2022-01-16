@@ -498,26 +498,26 @@ class AccountInvoice(models.Model):
 
         request_params.update({'conceptos': invoice_lines})
 
-        if not self.company_id.archivo_cer:
-            self.write({'proceso_timbrado': False})
-            self.env.cr.commit()
-            raise UserError(_('El archivo del certificado .cer no se encuentra.'))
-        if not self.company_id.archivo_key:
-            self.write({'proceso_timbrado': False})
-            self.env.cr.commit()
-            raise UserError(_('El archivo del certificado .key no se encuentra.'))
-        if not self.company_id.contrasena:
-            self.write({'proceso_timbrado': False})
-            self.env.cr.commit()
-            raise UserError(_('La contraseña del certificado no se encuentra.'))
-        archivo_cer = self.company_id.archivo_cer
-        archivo_key = self.company_id.archivo_key
-        request_params.update({
-            'certificados': {
-                'archivo_cer': archivo_cer.decode("utf-8"),
-                'archivo_key': archivo_key.decode("utf-8"),
-                'contrasena': self.company_id.contrasena,
-            }})
+        #if not self.company_id.archivo_cer:
+        #    self.write({'proceso_timbrado': False})
+        #    self.env.cr.commit()
+        #    raise UserError(_('El archivo del certificado .cer no se encuentra.'))
+        #if not self.company_id.archivo_key:
+        #    self.write({'proceso_timbrado': False})
+        #    self.env.cr.commit()
+        #    raise UserError(_('El archivo del certificado .key no se encuentra.'))
+        #if not self.company_id.contrasena:
+        #    self.write({'proceso_timbrado': False})
+        #    self.env.cr.commit()
+        #    raise UserError(_('La contraseña del certificado no se encuentra.'))
+        #archivo_cer = self.company_id.archivo_cer
+        #archivo_key = self.company_id.archivo_key
+        #request_params.update({
+        #    'certificados': {
+               # 'archivo_cer': archivo_cer.decode("utf-8"),
+               # 'archivo_key': archivo_key.decode("utf-8"),
+        #        'contrasena': self.company_id.contrasena,
+        #    }})
 
         #_logger.info('xml: ', json.dumps(request_params))
         return request_params
