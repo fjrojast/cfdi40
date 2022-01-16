@@ -247,15 +247,15 @@ class AccountPayment(models.Model):
             
     @api.model
     def to_json(self):
-        if not self.company_id.archivo_cer:
-            raise UserError(_('El archivo del certificado .cer no se encuentra.'))
-        if not self.company_id.archivo_key:
-            raise UserError(_('El archivo del certificado .key no se encuentra.'))
-        if not self.company_id.contrasena:
-            raise UserError(_('La contraseña del certificado no se encuentra.'))
+       # if not self.company_id.archivo_cer:
+       #     raise UserError(_('El archivo del certificado .cer no se encuentra.'))
+       # if not self.company_id.archivo_key:
+       #     raise UserError(_('El archivo del certificado .key no se encuentra.'))
+       # if not self.company_id.contrasena:
+       #     raise UserError(_('La contraseña del certificado no se encuentra.'))
 
-        archivo_cer = self.company_id.archivo_cer
-        archivo_key = self.company_id.archivo_key
+       # archivo_cer = self.company_id.archivo_cer
+       # archivo_key = self.company_id.archivo_key
 
         no_decimales = self.currency_id.no_decimales
         no_decimales_tc = self.currency_id.no_decimales_tc
@@ -364,11 +364,11 @@ class AccountPayment(models.Model):
 
                 'pagos20': {'Pagos': pagos},
 
-                'certificados': {
-                      'archivo_cer': archivo_cer.decode("utf-8"),
-                      'archivo_key': archivo_key.decode("utf-8"),
-                      'contrasena': self.company_id.contrasena,
-                },
+               # 'certificados': {
+               #       'archivo_cer': archivo_cer.decode("utf-8"),
+               #       'archivo_key': archivo_key.decode("utf-8"),
+               #       'contrasena': self.company_id.contrasena,
+               # },
 
             }
 
