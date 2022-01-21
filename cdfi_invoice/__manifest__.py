@@ -43,5 +43,5 @@
     'installable': True,
     'price': 0.00,
     'currency': 'USD',
-    'license': 'OPL-1',	
+    'license': 'OPL-1',
 }
