@@ -86,7 +86,7 @@ class AccountInvoice(models.Model):
                    ('S01', _('Sin efectos fiscales')),
                    ('CP01', _('Pagos')),
                    ('CN01', _('Nómina')),
-                   ('P01', _('Por definir')),],
+                   ('P01', _('Por definir (obsoleto)')),],
         string=_('Uso CFDI (cliente)'),
     )
     xml_invoice_link = fields.Char(string=_('XML Invoice Link'))
@@ -413,10 +413,13 @@ class AccountInvoice(models.Model):
             #probar con varios pedimentos
             pedimentos = []
             if line.pedimento:
-                pedimentos = line.pedimento.replace(' ','').split(',')
-                for pedimento in pedimentos:
-                   no_pedimento = pedimento[0:2] + '  ' + pedimento[2:4] + '  ' + pedimento[4:8] + '  ' + pedimento[8:]
-                   pedimentos.append({'NumeroPedimento': no_pedimento})
+                pedimento_list = line.pedimento.replace(' ','').split(',')
+                for pedimento in pedimento_list:
+                   if len(pedimento) != 15:
+                      self.write({'proceso_timbrado': False})
+                      self.env.cr.commit()
+                      raise UserError(_('La longitud del pedimento debe ser de 15 dígitos.'))
+                   pedimentos.append({'NumeroPedimento': pedimento[0:2] + '  ' + pedimento[2:4] + '  ' + pedimento[4:8] + '  ' + pedimento[8:]})
 
             product_string = line.product_id.code and line.product_id.code[:100] or ''
             if product_string == '':
@@ -445,7 +448,7 @@ class AccountInvoice(models.Model):
                                       'descripcion': self.clean_text(description),
                                       'ClaveProdServ': line.product_id.clave_producto,
                                       'ClaveUnidad': line.product_id.clave_unidad,
-                                      'Impuestos': tax_items,
+                                      'Impuestos': tax_items and tax_items or '',
                                       'Descuento': self.set_decimals(discount_prod, no_decimales_prod),
                                       'ObjetoImp': line.product_id.objetoimp,
                                       'InformacionAduanera': pedimentos and pedimentos or '',})
@@ -676,14 +679,14 @@ class AccountInvoice(models.Model):
                 invoice.write({'proceso_timbrado': False})
                 self.env.cr.commit()
                 if "Name or service not known" in error or "Failed to establish a new connection" in error:
-                    raise Warning("Servidor fuera de servicio, favor de intentar mas tarde")
+                    raise Warning("No se pudo conectar con el servidor.")
                 else:
                     raise Warning(error)
 
             if "Whoops, looks like something went wrong." in response.text:
                 invoice.write({'proceso_timbrado': False})
                 self.env.cr.commit()
-                raise Warning("Error con el servidor de facturación, favor de reportar el error a su persona de soporte. \nNo intente timbrar de nuevo hasta validar que el servicio ha sido restablecido, ya que pudiera timbrar doble alguna factura.")
+                raise Warning("Error en el proceso de timbrado, espere un minuto y vuelva a intentar timbrar nuevamente. \nSi el error aparece varias veces reportarlo con la persona de sistemas.")
             else:
                 json_response = response.json()
             estado_factura = json_response['estado_factura']
@@ -714,12 +717,14 @@ class AccountInvoice(models.Model):
                 if invoice.estado_factura == 'factura_cancelada':
                     pass
                     # raise UserError(_('La factura ya fue cancelada, no puede volver a cancelarse.'))
-                if not invoice.company_id.archivo_cer:
-                    raise UserError(_('Falta la ruta del archivo .cer'))
-                if not invoice.company_id.archivo_key:
-                    raise UserError(_('Falta la ruta del archivo .key'))
-                archivo_cer = self.company_id.archivo_cer
-                archivo_key = self.company_id.archivo_key
+                #if not invoice.company_id.archivo_cer:
+                #    raise UserError(_('Falta la ruta del archivo .cer'))
+                #if not invoice.company_id.archivo_key:
+                #    raise UserError(_('Falta la ruta del archivo .key'))
+                #archivo_cer = self.company_id.archivo_cer
+                #archivo_key = self.company_id.archivo_key
+                if not invoice.company_id.contrasena:
+                  raise UserError(_('El campo de contraseña de los certificados está vacío.'))
                 archivo_xml_link = invoice.company_id.factura_dir + '/' + invoice.move_name.replace('/', '_') + '.xml'
                 with open(archivo_xml_link, 'rb') as cf:
                      archivo_xml = base64.b64encode(cf.read())
@@ -727,12 +732,12 @@ class AccountInvoice(models.Model):
                     'rfc': invoice.company_id.rfc,
                     'api_key': invoice.company_id.proveedor_timbrado,
                     'uuid': self.folio_fiscal,
-                    'folio': self.folio,
-                    'serie_factura': invoice.company_id.serie_factura,
+                    'folio': self.move_name.replace('INV','').replace('/',''),
+                    'serie_factura':  self.journal_id.serie_diario or self.company_id.serie_factura,
                     'modo_prueba': invoice.company_id.modo_prueba,
                     'certificados': {
-                        'archivo_cer': archivo_cer.decode("utf-8"),
-                        'archivo_key': archivo_key.decode("utf-8"),
+                    #    'archivo_cer': archivo_cer.decode("utf-8"),
+                    #    'archivo_key': archivo_key.decode("utf-8"),
                         'contrasena': invoice.company_id.contrasena,
                     },
                     'xml': archivo_xml.decode("utf-8"),
@@ -760,12 +765,12 @@ class AccountInvoice(models.Model):
                 except Exception as e:
                     error = str(e)
                     if "Name or service not known" in error or "Failed to establish a new connection" in error:
-                        raise Warning("Servidor fuera de servicio, favor de intentar mas tarde")
+                        raise Warning("No se pudo conectar con el servidor.")
                     else:
                         raise Warning(error)
 
                 if "Whoops, looks like something went wrong." in response.text:
-                    raise Warning("Error con el servidor de facturación, favor de reportar el error a su persona de soporte.")
+                    raise Warning("Error en el proceso de timbrado, espere un minuto y vuelva a intentar timbrar nuevamente. \nSi el error aparece varias veces reportarlo con la persona de sistemas.")
 
                 json_response = response.json()
 
