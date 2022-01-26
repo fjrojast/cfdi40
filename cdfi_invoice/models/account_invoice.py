@@ -9,7 +9,7 @@ from lxml import etree
 from odoo import fields, models, api,_ 
 import odoo.addons.decimal_precision as dp
 from odoo.exceptions import UserError, Warning
-
+from odoo.tools import date_utils
 from reportlab.graphics.barcode import createBarcodeDrawing
 from reportlab.lib.units import mm
 from . import amount_to_text_es_MX
@@ -136,6 +136,7 @@ class AccountMove(models.Model):
         string=_('Exportacion'), default = '01',
     )
     proceso_timbrado = fields.Boolean(string=_('Proceso de timbrado'))
+    tax_payment = fields.Text(string=_('Taxes'))
 
     @api.model
     def _reverse_move_vals(self,default_values, cancel=True):
@@ -475,10 +476,14 @@ class AccountMove(models.Model):
                    for line in tax_grouped_ret.values():
                        tax = self.env['account.tax'].browse(line['tax_id'])
                        retenciones.append({'impuesto': tax.impuesto,
+                                         'TipoFactor': tax.tipo_factor,
+                                         'tasa': self.set_decimals(tax.amount / 100.0, 6) * -1,
                                          'importe': self.set_decimals(line['amount'] * -1, no_decimales),
+                                         'base': self.set_decimals(line['base'] * -1, no_decimales),
                                          })
                    impuestos.update({'retenciones': retenciones, 'TotalImpuestosRetenidos': self.set_decimals(ret_tot, no_decimales)})
                 request_params.update({'impuestos': impuestos})
+                self.tax_payment= json.dumps(impuestos)
 
         if tax_local_ret or tax_local_tras:
            if tax_local_tras and not tax_local_ret:
