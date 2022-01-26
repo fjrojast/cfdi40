@@ -93,7 +93,7 @@ class AccountInvoice(models.Model):
     estado_factura = fields.Selection(
         selection=[('factura_no_generada', 'Factura no generada'), ('factura_correcta', 'Factura correcta'), 
                    ('solicitud_cancelar', 'Cancelación en proceso'),('factura_cancelada', 'Factura cancelada'),
-                   ('solicitud_rechazada', 'Cancelación rechazada'),],
+                   ('solicitud_rechazada', 'Cancelación rechazada')],
         string=_('Estado de factura'),
         default='factura_no_generada',
         readonly=True
@@ -139,6 +139,7 @@ class AccountInvoice(models.Model):
         string=_('Exportacion'), default = '01',
     )
     proceso_timbrado = fields.Boolean(string=_('Proceso de timbrado'))
+    tax_payment = fields.Text(string=_('Taxes'))
 
     @api.model
     def _prepare_refund(self, invoice, date_invoice=None, date=None, description=None, journal_id=None):
@@ -479,10 +480,14 @@ class AccountInvoice(models.Model):
                    for line in tax_grouped_ret.values():
                        tax = self.env['account.tax'].browse(line['tax_id'])
                        retenciones.append({'impuesto': tax.impuesto,
+                                         'TipoFactor': tax.tipo_factor,
+                                         'tasa': self.set_decimals(tax.amount / 100.0, 6) * -1,
                                          'importe': self.set_decimals(line['amount'] * -1, no_decimales),
+                                         'base': self.set_decimals(line['base'] * -1, no_decimales),
                                          })
                    impuestos.update({'retenciones': retenciones, 'TotalImpuestosRetenidos': self.set_decimals(ret_tot, no_decimales)})
                 request_params.update({'impuestos': impuestos})
+                self.tax_payment= json.dumps(impuestos)
 
         if tax_local_ret or tax_local_tras:
            if tax_local_tras and not tax_local_ret:
@@ -741,8 +746,8 @@ class AccountInvoice(models.Model):
                         'contrasena': invoice.company_id.contrasena,
                     },
                     'xml': archivo_xml.decode("utf-8"),
-                          'motivo': self.env.context.get('motivo_cancelacion',False),
-                          'foliosustitucion': self.env.context.get('foliosustitucion',''),
+                    'motivo': self.env.context.get('motivo_cancelacion',False),
+                    'foliosustitucion': self.env.context.get('foliosustitucion',''),
                 }
                 if self.company_id.proveedor_timbrado == 'multifactura':
                     url = '%s' % ('http://facturacion.itadmin.com.mx/api/refund')
