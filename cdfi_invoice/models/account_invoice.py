@@ -93,7 +93,7 @@ class AccountInvoice(models.Model):
     estado_factura = fields.Selection(
         selection=[('factura_no_generada', 'Factura no generada'), ('factura_correcta', 'Factura correcta'), 
                    ('solicitud_cancelar', 'Cancelación en proceso'),('factura_cancelada', 'Factura cancelada'),
-                   ('solicitud_rechazada', 'Cancelación rechazada')],
+                   ('solicitud_rechazada', 'Cancelación rechazada'),],
         string=_('Estado de factura'),
         default='factura_no_generada',
         readonly=True
@@ -358,6 +358,12 @@ class AccountInvoice(models.Model):
                          tax_tras.append({'Base': self.set_decimals(taxes['base'], no_decimales_prod),
                                            'Impuesto': tax.impuesto,
                                            'TipoFactor': tax.tipo_factor,})
+                      elif tax.tipo_factor == 'Cuota':
+                         tax_tras.append({'Base': self.set_decimals(line.quantity, no_decimales_prod),
+                                           'Impuesto': tax.impuesto,
+                                           'TipoFactor': tax.tipo_factor,
+                                           'TasaOCuota': self.set_decimals(tax.amount,6),
+                                           'Importe': self.set_decimals(taxes['amount'], no_decimales_prod),})
                       else:
                          tax_tras.append({'Base': self.set_decimals(taxes['base'], no_decimales_prod),
                                            'Impuesto': tax.impuesto,
@@ -366,12 +372,12 @@ class AccountInvoice(models.Model):
                                            'Importe': self.set_decimals(taxes['amount'], no_decimales_prod),})
                       tras_tot += taxes['amount']
                       val = {'tax_id': tax['id'],
-                             'base': taxes['base'],
+                             'base': taxes['base'] if tax.tipo_factor != 'Cuota' else line.quantity,
                              'amount': taxes['amount'],}
                       if key not in tax_grouped_tras:
                           tax_grouped_tras[key] = val
                       else:
-                          tax_grouped_tras[key]['base'] += taxes['base']
+                          tax_grouped_tras[key]['base'] += taxes['base'] if tax.tipo_factor != 'Cuota' else line.quantity
                           tax_grouped_tras[key]['amount'] += taxes['amount']
                    else:
                       tax_ret.append({'Base': self.set_decimals(taxes['base'], no_decimales_prod),
@@ -471,7 +477,7 @@ class AccountInvoice(models.Model):
                        if tax.tipo_factor != 'Exento':
                           traslados.append({'impuesto': tax.impuesto,
                                          'TipoFactor': tax.tipo_factor,
-                                         'tasa': self.set_decimals(tax.amount / 100.0, 6), # if tax.tipo_factor != 'Exento' else '',
+                                         'tasa': self.set_decimals(tax.amount / 100.0, 6) if tax.tipo_factor != 'Cuota' else self.set_decimals(tax.amount, 6),
                                          'importe': self.set_decimals(line['amount'], no_decimales), # if tax.tipo_factor != 'Exento' else '',
                                          'base': self.set_decimals(line['base'], no_decimales),
                                          })
@@ -487,7 +493,7 @@ class AccountInvoice(models.Model):
                                          })
                    impuestos.update({'retenciones': retenciones, 'TotalImpuestosRetenidos': self.set_decimals(ret_tot, no_decimales)})
                 request_params.update({'impuestos': impuestos})
-                self.tax_payment= json.dumps(impuestos)
+                self.tax_payment = json.dumps(impuestos)
 
         if tax_local_ret or tax_local_tras:
            if tax_local_tras and not tax_local_ret:
@@ -596,7 +602,7 @@ class AccountInvoice(models.Model):
             if TimbreFiscalDigital:
                 break
 
-        self.tipocambio = xml_data.find('TipoCambio') and xml_data.attrib['TipoCambio'] or '1'
+        self.tipocambio = xml_data.attrib['TipoCambio']
         self.moneda = xml_data.attrib['Moneda']
         self.numero_cetificado = xml_data.attrib['NoCertificado']
         self.cetificaso_sat = TimbreFiscalDigital.attrib['NoCertificadoSAT']
@@ -746,8 +752,8 @@ class AccountInvoice(models.Model):
                         'contrasena': invoice.company_id.contrasena,
                     },
                     'xml': archivo_xml.decode("utf-8"),
-                    'motivo': self.env.context.get('motivo_cancelacion',False),
-                    'foliosustitucion': self.env.context.get('foliosustitucion',''),
+                          'motivo': self.env.context.get('motivo_cancelacion',False),
+                          'foliosustitucion': self.env.context.get('foliosustitucion',''),
                 }
                 if self.company_id.proveedor_timbrado == 'multifactura':
                     url = '%s' % ('http://facturacion.itadmin.com.mx/api/refund')
