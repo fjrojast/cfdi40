@@ -10,5 +10,5 @@ class ProductTemplate(models.Model):
         selection=[('01', 'No objeto de impuesto'), 
                    ('02', 'Sí objeto de impuesto'), 
                    ('03', 'Sí objeto del impuesto y no obligado al desglose'),],
-        string=_('Impuestos'), default = '02',
+        string=_('Exportacion'), default = '02',
     )
