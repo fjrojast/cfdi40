@@ -92,4 +92,3 @@
 
 </odoo>
 
-<!--attrs="{'invisible':['|',('factura_cfdi','=',True), ('state','not in',('open', 'paid'))]}"-->
