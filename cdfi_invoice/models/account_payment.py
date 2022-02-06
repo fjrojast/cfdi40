@@ -370,7 +370,7 @@ class AccountPayment(models.Model):
                   if line['ImpuestoP'] == '003':
                        totales.update({'TotalRetencionesIEPS': self.set_decimals(line['ImporteP'],2),})
               impuestosp.update({'RetencionesP': retencionp})
-        totales.update({'MontoTotalPagos': round(self.amount * float(self.tipocambiop), 2),})
+        totales.update({'MontoTotalPagos': self.set_decimals(self.amount * float(self.tipocambiop), 2),})
 
         pagos = []
         pagos.append({
