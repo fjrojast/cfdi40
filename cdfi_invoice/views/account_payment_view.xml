@@ -23,28 +23,18 @@
                                     <group cols="4">
                                         <group string="Datos del comprobante">
                                             <field name="forma_pago" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
-                                        </group>
-                                        <group  string="Monto">
-                                            <label for="saldo_pendiente"/>
-                                            <div name="amount_div1" class="o_row">
-                                                 <field name="saldo_pendiente"/>
-                                            </div>
-                                            <label for="monto_pagar"/>
-                                            <div name="amount_div2" class="o_row">
-                                                 <field name="monto_pagar"/>
-                                            </div>
+                                            <field name="fecha_pago" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
+                                            <field name="numero_operacion" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                         </group>
                                     </group>
-                                    <separator  string="Datos del pago"/>
+                                    <separator  string="Datos bancarios" attrs="{'invisible':[('forma_pago','not in',('02','03'))]}"/>
                                     <group cols="4">
                                         <group>
-                                            <field name="fecha_pago" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                             <field name="cuenta_emisor" domain="[('partner_id','=', partner_id)]" attrs="{'invisible':[('forma_pago','not in',('02','03'))], 'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                             <field name="banco_emisor"   attrs="{'invisible':[('forma_pago','not in',('02','03'))], 'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                             <field name="rfc_banco_emisor"  attrs="{'invisible':[('forma_pago','not in',('02','03'))], 'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                         </group>
                                         <group>
-                                            <field name="numero_operacion" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                             <field name="banco_receptor" attrs="{'invisible':[('forma_pago','not in',('02','03'))], 'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                             <field name="cuenta_beneficiario" attrs="{'invisible':[('forma_pago','not in',('02','03'))], 'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                             <field name="rfc_banco_receptor" attrs="{'invisible':[('forma_pago','not in',('02','03'))], 'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
@@ -56,9 +46,9 @@
                                             <field name="uuid_relacionado" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
                                         </group>
                                         <group  string="Detalles de Pago">
-                                            <field name="folio_fiscal" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
+                                            <field name="folio_fiscal" />
                                             <field name="confirmacion" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
-                                            <field name="estado_pago" attrs="{'readonly': [('estado_pago','!=','pago_no_enviado')]}"/>
+                                            <field name="estado_pago" />
                                         </group>
                                     </group>
                              </page>

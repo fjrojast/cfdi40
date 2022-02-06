@@ -475,6 +475,7 @@ class AccountMove(models.Model):
                                          'tasa': self.set_decimals(tax.amount / 100.0, 6) if tax.tipo_factor != 'Cuota' else self.set_decimals(tax.amount, 6),
                                          'importe': self.set_decimals(line['amount'], no_decimales), # if tax.tipo_factor != 'Exento' else '',
                                          'base': self.set_decimals(line['base'], no_decimales),
+                                         'tax_id': line['tax_id'],
                                          })
                    impuestos.update({'translados': traslados, 'TotalImpuestosTrasladados': self.set_decimals(tras_tot, no_decimales)})
                 if tax_grouped_ret:
@@ -482,9 +483,10 @@ class AccountMove(models.Model):
                        tax = self.env['account.tax'].browse(line['tax_id'])
                        retenciones.append({'impuesto': tax.impuesto,
                                          'TipoFactor': tax.tipo_factor,
-                                         'tasa': self.set_decimals(tax.amount / 100.0, 6) * -1,
+                                         'tasa': self.set_decimals(float(tax.amount) / 100.0 * -1, 6),
                                          'importe': self.set_decimals(line['amount'] * -1, no_decimales),
-                                         'base': self.set_decimals(line['base'] * -1, no_decimales),
+                                         'base': self.set_decimals(line['base'], no_decimales),
+                                         'tax_id': line['tax_id'],
                                          })
                    impuestos.update({'retenciones': retenciones, 'TotalImpuestosRetenidos': self.set_decimals(ret_tot, no_decimales)})
                 request_params.update({'impuestos': impuestos})
@@ -742,8 +744,8 @@ class AccountMove(models.Model):
                 values = {
                     'rfc': invoice.company_id.vat,
                     'api_key': invoice.company_id.proveedor_timbrado,
-                    'uuid': self.folio_fiscal,
-                    'folio': self.name.replace('INV','').replace('/',''),
+                    'uuid': invoice.folio_fiscal,
+                    'folio': invoice.name.replace('INV','').replace('/',''),
                     'serie_factura':  self.journal_id.serie_diario or self.company_id.serie_factura,
                     'modo_prueba': invoice.company_id.modo_prueba,
                     'certificados': {
@@ -806,9 +808,7 @@ class AccountMove(models.Model):
                     log_msg = "CFDI Cancelado"
                 invoice.write({'estado_factura': json_response['estado_factura']})
                 invoice.message_post(body=log_msg)
- 
- 
-    
+
     def force_invoice_send(self):
         for inv in self:
             email_act = inv.action_invoice_sent()
@@ -845,6 +845,8 @@ class AccountMove(models.Model):
                 url = '%s' % ('http://facturacion3.itadmin.com.mx/api/consulta-cacelar')
             elif invoice.company_id.proveedor_timbrado == 'gecoerp':
                 url = '%s' % ('http://facturacion.itadmin.com.mx/api/consulta-cacelar')
+            else:
+                raise UserError(_('Error, falta seleccionar el servidor de timbrado en la configuración de la compañía.'))
 
             try:
                response = requests.post(url, 
