@@ -240,6 +240,8 @@ class AccountMove(models.Model):
            naive_from = self.fecha_factura
         local_dt_from = naive_from.replace(tzinfo=pytz.UTC).astimezone(local)
         date_from = local_dt_from.strftime ("%Y-%m-%dT%H:%M:%S")
+        if not self.fecha_factura:
+           self.fecha_factura = datetime.datetime.now()
 
         if self.currency_id.name == 'MXN':
            tipocambio = 1
@@ -344,7 +346,7 @@ class AccountMove(models.Model):
                    self.env.cr.commit()
                    raise UserError(_('El impuesto %s no tiene tipo de factor del SAT configurado.') % (tax.name))
                 if tax.impuesto != '004':
-                   key = tax['id']
+                   key = taxes['id']
                    if tax.price_include or tax.amount_type == 'division':
                        tax_included += taxes['amount']
 
@@ -366,14 +368,14 @@ class AccountMove(models.Model):
                                            'TasaOCuota': self.set_decimals(tax.amount / 100.0,6),
                                            'Importe': self.set_decimals(taxes['amount'], no_decimales_prod),})
                       tras_tot += taxes['amount']
-                      val = {'tax_id': tax['id'],
+                      val = {'tax_id': taxes['id'],
                              'base': taxes['base'] if tax.tipo_factor != 'Cuota' else line.quantity,
                              'amount': taxes['amount'],}
                       if key not in tax_grouped_tras:
                           tax_grouped_tras[key] = val
                       else:
-                          tax_grouped_tras[key]['base'] += taxes['base'] if tax.tipo_factor != 'Cuota' else line.quantity
-                          tax_grouped_tras[key]['amount'] += taxes['amount']
+                          tax_grouped_tras[key]['base'] += val['base'] if tax.tipo_factor != 'Cuota' else line.quantity
+                          tax_grouped_tras[key]['amount'] += val['amount']
                    else:
                       tax_ret.append({'Base': self.set_decimals(taxes['base'], no_decimales_prod),
                                       'Impuesto': tax.impuesto,
@@ -381,14 +383,14 @@ class AccountMove(models.Model):
                                       'TasaOCuota': self.set_decimals(tax.amount / 100.0 * -1, 6),
                                       'Importe': self.set_decimals(taxes['amount'] * -1, no_decimales_prod),})
                       ret_tot += taxes['amount'] * -1
-                      val = {'tax_id': tax['id'],
+                      val = {'tax_id': taxes['id'],
                              'base': taxes['base'],
                              'amount': taxes['amount'],}
                       if key not in tax_grouped_ret:
                           tax_grouped_ret[key] = val
                       else:
-                          tax_grouped_tras[key]['base'] += taxes['base']
-                          tax_grouped_ret[key]['amount'] += taxes['amount']
+                          tax_grouped_ret[key]['base'] += val['base']
+                          tax_grouped_ret[key]['amount'] += val['amount']
                 else: #impuestos locales
                    if taxes['amount'] >= 0.0:
                       tax_local_tras_tot += taxes['amount']
@@ -469,11 +471,16 @@ class AccountMove(models.Model):
                 if tax_grouped_tras:
                    for line in tax_grouped_tras.values():
                        tax = self.env['account.tax'].browse(line['tax_id'])
-                       if tax.tipo_factor != 'Exento':
-                          traslados.append({'impuesto': tax.impuesto,
+                       if tax.tipo_factor == 'Exento':
+                          tasa_tr = ''
+                       elif tax.tipo_factor == 'Cuota':
+                          tasa_tr = self.set_decimals(tax.amount, 6)
+                       else:
+                          tasa_tr = self.set_decimals(tax.amount / 100.0, 6)
+                       traslados.append({'impuesto': tax.impuesto,
                                          'TipoFactor': tax.tipo_factor,
-                                         'tasa': self.set_decimals(tax.amount / 100.0, 6) if tax.tipo_factor != 'Cuota' else self.set_decimals(tax.amount, 6),
-                                         'importe': self.set_decimals(line['amount'], no_decimales), # if tax.tipo_factor != 'Exento' else '',
+                                         'tasa': tasa_tr,
+                                         'importe': self.set_decimals(line['amount'], no_decimales) if tax.tipo_factor != 'Exento' else '',
                                          'base': self.set_decimals(line['base'], no_decimales),
                                          'tax_id': line['tax_id'],
                                          })
@@ -607,8 +614,8 @@ class AccountMove(models.Model):
         self.selo_sat = TimbreFiscalDigital.attrib['SelloSAT']
         self.folio_fiscal = TimbreFiscalDigital.attrib['UUID']
         self.invoice_datetime = xml_data.attrib['Fecha']
-        if not self.fecha_factura:
-            self.fecha_factura = self.invoice_datetime.replace('T', ' ')
+#        if not self.fecha_factura:
+#            self.fecha_factura = self.invoice_datetime.replace('T', ' ')
         version = TimbreFiscalDigital.attrib['Version']
         self.cadena_origenal = '||%s|%s|%s|%s|%s||' % (version, self.folio_fiscal, self.fecha_certificacion,
                                                        self.selo_digital_cdfi, self.cetificaso_sat)
