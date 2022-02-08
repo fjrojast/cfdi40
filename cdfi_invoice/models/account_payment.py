@@ -175,31 +175,32 @@ class AccountPayment(models.Model):
             self.fecha_pago = datetime.combine((self.payment_date), datetime.max.time())
 
     def add_resitual_amounts(self):
-        no_decimales = self.currency_id.no_decimales
-        no_decimales_tc = self.currency_id.no_decimales_tc
-        docto_relacionados = []
-        tax_grouped_tras = {}
-        tax_grouped_ret = {}
-        if self.reconciled_invoice_ids:
-            for invoice in self.reconciled_invoice_ids:
+        for payment in self:
+          no_decimales = payment.currency_id.no_decimales
+          no_decimales_tc = payment.currency_id.no_decimales_tc
+          docto_relacionados = []
+          tax_grouped_tras = {}
+          tax_grouped_ret = {}
+          if payment.invoice_ids:
+            for invoice in payment.invoice_ids:
                 if invoice.factura_cfdi:
                     #revisa la cantidad que se va a pagar en el docuemnto
-                    if self.currency_id.name != invoice.moneda:
-                        if self.currency_id.name == 'MXN':
-                            equivalenciadr = round(invoice.currency_id.with_context(date=self.payment_date).rate,6) + 0.000001
+                    if payment.currency_id.name != invoice.moneda:
+                        if payment.currency_id.name == 'MXN':
+                            equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001
                         else:
-                            equivalenciadr = float(invoice.tipocambio)/float(self.currency_id.with_context(date=self.payment_date).rate)
+                            equivalenciadr = float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.payment_date).rate)
                     else:
-                        if self.currency_id.name == 'MXN':
+                        if payment.currency_id.name == 'MXN':
                            equivalenciadr = 1
                         else:
-                           equivalenciadr = round(invoice.currency_id.with_context(date=self.payment_date).rate,6) + 0.000001 #1
+                           equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001 #1
 
                     payment_dict = json.loads(invoice.invoice_payments_widget)
                     payment_content = payment_dict['content']
                     monto_pagado = 0
                     for invoice_payments in payment_content:
-                        if invoice_payments['account_payment_id'] == self.id:
+                        if invoice_payments['account_payment_id'] == payment.id:
                             monto_pagado = invoice_payments['amount']
 
                     paid_pct = monto_pagado / invoice.amount_total
@@ -211,18 +212,19 @@ class AccountPayment(models.Model):
                        objetoimpdr = '02'
                        traslados = taxes['translados']
                        for traslado in traslados:
-                           trasladodr.append({'BaseDR': self.set_decimals(float(traslado['base']) * paid_pct, 2),
+                           importedr = traslado['importe'] and float(traslado['importe']) or 0
+                           trasladodr.append({'BaseDR': payment.set_decimals(float(traslado['base']) * paid_pct, 2),
                                          'ImpuestoDR': traslado['impuesto'],
                                          'TipoFactorDR': traslado['TipoFactor'],
                                          'TasaOcuotaDR': traslado['tasa'],
-                                         'ImporteDR': self.set_decimals(float(traslado['importe']) * paid_pct,2),
+                                         'ImporteDR': payment.set_decimals(importedr * paid_pct,2) if traslado['TipoFactor'] != 'Exento' else '',
                                          })
                            key = traslado['tax_id']
                            val = {'BaseP': round(float(traslado['base']) * paid_pct,2) / equivalenciadr,
                                   'ImpuestoP': traslado['impuesto'],
                                   'TipoFactorP': traslado['TipoFactor'],
                                   'TasaOCuotaP': traslado['tasa'],
-                                  'ImporteP': round(float(traslado['importe']) * paid_pct,2) / equivalenciadr,}
+                                  'ImporteP': round(importedr * paid_pct,2) / equivalenciadr,}
                            if key not in tax_grouped_tras:
                                tax_grouped_tras[key] = val
                            else:
@@ -232,19 +234,22 @@ class AccountPayment(models.Model):
                        objetoimpdr = '02'
                        retenciones = taxes['retenciones']
                        for retencion in retenciones:
-                           retenciondr.append({'BaseDR': self.set_decimals(float(retencion['base']) * paid_pct,no_decimales),
+                           retenciondr.append({'BaseDR': payment.set_decimals(float(retencion['base']) * paid_pct,2),
                                          'ImpuestoDR': retencion['impuesto'],
                                          'TipoFactorDR': retencion['TipoFactor'],
                                          'TasaOcuotaDR': retencion['tasa'],
-                                         'ImporteDR': self.set_decimals(float(retencion['importe']) * paid_pct,no_decimales),
+                                         'ImporteDR': payment.set_decimals(float(retencion['importe']) * paid_pct,2),
                                          })
                            key = retencion['tax_id']
                            val = {'ImpuestoP': retencion['impuesto'],
-                                  'ImporteP': round(float(retencion['importe']) * paid_pct / equivalenciadr,no_decimales),}
+                                  'ImporteP': round(float(retencion['importe']) * paid_pct,2) / equivalenciadr,}
                            if key not in tax_grouped_ret:
                                tax_grouped_ret[key] = val
                            else:
-                               tax_grouped_ret[key]['ImporteP'] += round(float(retencion['importe']) * paid_pct / equivalenciadr,no_decimales),
+                               tax_grouped_ret[key]['ImporteP'] += round(float(retencion['importe']) * paid_pct,2) / equivalenciadr
+
+                    if objetoimpdr == '02' and not trasladodr and not retenciondr:
+                       raise Warning("No hay información de impuestos en el documento. Carga el XML en la factura para agregar los impuestos.")
 
                     docto_relacionados.append({
                           'MonedaDR': invoice.moneda,
@@ -252,14 +257,14 @@ class AccountPayment(models.Model):
                           'IdDocumento': invoice.folio_fiscal,
                           'folio_facura': invoice.number_folio,
                           'NumParcialidad': len(payment_content), 
-                          'ImpSaldoAnt': self.set_decimals(invoice.amount_residual + monto_pagado, no_decimales),
-                          'ImpPagado': self.set_decimals(monto_pagado, no_decimales),
-                          'ImpSaldoInsoluto': self.set_decimals(invoice.amount_residual, no_decimales),
+                          'ImpSaldoAnt': payment.set_decimals(invoice.amount_residual + monto_pagado, no_decimales),
+                          'ImpPagado': payment.set_decimals(monto_pagado, no_decimales),
+                          'ImpSaldoInsoluto': payment.set_decimals(invoice.amount_residual, no_decimales),
                           'ObjetoImpDR': objetoimpdr,
                           'ImpuestosDR': {'traslados': trasladodr, 'retenciones': retenciondr,},
                     })
 
-            self.write({'docto_relacionados': json.dumps(docto_relacionados), 
+            payment.write({'docto_relacionados': json.dumps(docto_relacionados), 
                         'retencionesp': json.dumps(tax_grouped_ret), 
                         'trasladosp': json.dumps(tax_grouped_tras),})
 
@@ -366,7 +371,7 @@ class AccountPayment(models.Model):
                   trasladop.append({'ImpuestoP': line['ImpuestoP'],
                                     'TipoFactorP': line['TipoFactorP'],
                                     'TasaOCuotaP': line['TasaOCuotaP'],
-                                    'ImporteP': self.set_decimals(line['ImporteP'],6),
+                                    'ImporteP': self.set_decimals(line['ImporteP'],6) if line['TipoFactorP'] != 'Exento' else '',
                                     'BaseP': self.set_decimals(line['BaseP'],6),
                                     })
                   if line['ImpuestoP'] == '002' and line['TasaOCuotaP'] == '0.160000':
@@ -378,6 +383,8 @@ class AccountPayment(models.Model):
                   if line['ImpuestoP'] == '002' and line['TasaOCuotaP'] == '0.000000':
                        totales.update({'TotalTrasladosBaseIVA0': self.set_decimals(line['BaseP'] * float(self.tipocambiop),2),
                                        'TotalTrasladosImpuestoIVA0': self.set_decimals(line['ImporteP'] * float(self.tipocambiop),2),})
+                  if line['ImpuestoP'] == '002' and line['TipoFactorP'] == 'Exento':
+                       totales.update({'TotalTrasladosBaseIVAExento': self.set_decimals(line['BaseP'] * float(self.tipocambiop),2),})
               impuestosp.update({'TrasladosP': trasladop})
            if taxes_retenciones:
               for line in taxes_retenciones.values():
