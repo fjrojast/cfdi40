@@ -43,6 +43,7 @@
                             <group cols="4"  string="Timbres">
                                 <group>
                                     <field name="saldo_timbres"/>
+                                    <field name="fecha_timbres"/>
                                     <field name="saldo_alarma"/>
                                     <field name="correo_alarma"/>
                                     <button name="button_dummy"
