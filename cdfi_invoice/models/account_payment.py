@@ -185,6 +185,8 @@ class AccountPayment(models.Model):
                             monto_pagado = invoice_payments['amount']
 
                     paid_pct = monto_pagado / invoice.amount_total
+                    if not invoice.tax_payment:
+                       raise Warning("No hay información de impuestos en el documento. Carga el XML en la factura para agregar los impuestos.")
                     taxes = json.loads(invoice.tax_payment)
                     objetoimpdr = '01'
                     trasladodr = []
