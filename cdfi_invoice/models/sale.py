@@ -70,7 +70,7 @@ class SaleOrder(models.Model):
                    ('S01', _('Sin efectos fiscales')),
                    ('CP01', _('Pagos')),
                    ('CN01', _('Nómina')),
-                   ('P01', _('Por definir')),],
+                   ('P01', _('Por definir (obsoleto)')),],
         string=_('Uso CFDI (cliente)'),
     )
     fecha_corregida = fields.Datetime(string=_('Fecha Cotizacion'), compute='_get_fecha_corregida')

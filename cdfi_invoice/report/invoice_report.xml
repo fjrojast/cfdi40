@@ -111,7 +111,14 @@
 								<t t-if="not o.factura_cfdi">
 									<strong>Nota de venta:</strong>
 								</t>
-								<!--<strong><span t-if="not o.serie_emisor=='false'" t-field="o.serie_emisor" /></strong>-->
+								<strong>
+								     <t t-if="not o.journal_id.serie_diario">
+                                        <span t-if="o.company_id.serie_factura" t-field="o.company_id.serie_factura" />
+								     </t>
+								     <t t-if="o.journal_id.serie_diario">
+                                        <span t-field="o.journal_id.serie_diario" />
+								     </t>
+                                </strong>
 								<span t-field="o.number_folio" />
 							</div>
 							<div>
