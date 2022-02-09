@@ -160,8 +160,8 @@ class AccountPayment(models.Model):
           docto_relacionados = []
           tax_grouped_tras = {}
           tax_grouped_ret = {}
-          if payment.invoice_ids:
-            for invoice in payment.invoice_ids:
+          if payment.reconciled_invoice_ids:
+            for invoice in payment.reconciled_invoice_ids:
                 if invoice.factura_cfdi:
                     #revisa la cantidad que se va a pagar en el docuemnto
                     if payment.currency_id.name != invoice.moneda:
