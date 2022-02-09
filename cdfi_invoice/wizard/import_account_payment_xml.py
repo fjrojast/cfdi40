@@ -142,7 +142,7 @@ class import_account_payment_from_xml(models.TransientModel):
                     else:
                         tax_grouped_tras[key]['base'] += float(traslado.attrib['Base'])
                         tax_grouped_tras[key]['amount'] += float(importe)
-              _logger.info('traslado %s', tax_grouped_tras)
+              #_logger.info('traslado %s', tax_grouped_tras)
 
               retenciones = imp_prod.find('cfdi:Retenciones', NSMAP)
               if retenciones:
@@ -171,7 +171,7 @@ class import_account_payment_from_xml(models.TransientModel):
                     else:
                         tax_grouped_ret[key]['base'] += float(retencion.attrib['Base'])
                         tax_grouped_ret[key]['amount'] += float(importe)
-              _logger.info('retenciones %s', tax_grouped_ret)
+              #_logger.info('retenciones %s', tax_grouped_ret)
 
         if tax_grouped_tras or tax_grouped_ret:
                 impuestos = {}
