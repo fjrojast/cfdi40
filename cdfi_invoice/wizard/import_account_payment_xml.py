@@ -10,6 +10,9 @@ from dateutil.parser import parse
 from reportlab.graphics.barcode import createBarcodeDrawing
 from reportlab.lib.units import mm
 
+import logging
+_logger = logging.getLogger(__name__)
+
 class import_account_payment_from_xml(models.TransientModel):
     _name ='import.account.payment.from.xml'
 
@@ -119,9 +122,10 @@ class import_account_payment_from_xml(models.TransientModel):
                        tasa = str(float(traslado.attrib['TasaOCuota'])*100)
                     else:
                        tasa = str(0)
+                    company_id = self._context.get('company_id', self.env.user.company_id.id)
                     tax_exist = self.env['account.tax'].search([('impuesto','=',traslado.attrib['Impuesto']), ('type_tax_use','=','sale'), 
                                                 ('tipo_factor','=',traslado.attrib['TipoFactor']), ('amount', '=', tasa), 
-                                                ('company_id','=',self.env.company.id)],limit=1)
+                                                ('company_id','=',company_id)],limit=1)
                     if not tax_exist:
                        raise Warning(_("Un impuesto en el XML no está configurado en el sistema"))
 
@@ -138,7 +142,7 @@ class import_account_payment_from_xml(models.TransientModel):
                     else:
                         tax_grouped_tras[key]['base'] += float(traslado.attrib['Base'])
                         tax_grouped_tras[key]['amount'] += float(importe)
-              _logger.info('traslado %s', tax_grouped_tras)
+              #_logger.info('traslado %s', tax_grouped_tras)
 
               retenciones = imp_prod.find('cfdi:Retenciones', NSMAP)
               if retenciones:
@@ -147,9 +151,10 @@ class import_account_payment_from_xml(models.TransientModel):
                        tasa = str(float(retencion.attrib['TasaOCuota'])*-100)
                     else:
                        tasa = str(0)
+                    company_id = self._context.get('company_id', self.env.user.company_id.id)
                     tax_exist = self.env['account.tax'].search([('impuesto','=',retencion.attrib['Impuesto']), ('type_tax_use','=','sale'), 
                                                 ('tipo_factor','=',retencion.attrib['TipoFactor']), ('amount', '=', tasa), 
-                                                ('company_id','=',self.env.company.id)],limit=1)
+                                                ('company_id','=',company_id)],limit=1)
                     if not tax_exist:
                        raise Warning(_("Un impuesto en el XML no está configurado en el sistema"))
 
@@ -166,7 +171,7 @@ class import_account_payment_from_xml(models.TransientModel):
                     else:
                         tax_grouped_ret[key]['base'] += float(retencion.attrib['Base'])
                         tax_grouped_ret[key]['amount'] += float(importe)
-              _logger.info('retenciones %s', tax_grouped_ret)
+              #_logger.info('retenciones %s', tax_grouped_ret)
 
         if tax_grouped_tras or tax_grouped_ret:
                 impuestos = {}
