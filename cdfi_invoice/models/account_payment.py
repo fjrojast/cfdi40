@@ -177,7 +177,7 @@ class AccountPayment(models.Model):
                         else:
                            equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001 #1
 
-                    payment_dict = json.loads(invoice.invoice_payments_widget)
+                    payment_dict = json.loads(invoice.payments_widget)
                     payment_content = payment_dict['content']
                     monto_pagado = 0
                     for invoice_payments in payment_content:
