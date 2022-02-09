@@ -169,8 +169,8 @@ class AccountPayment(models.Model):
             return {'domain': {'payment_method_id': [('payment_type', '=', payment_type), ('id', 'in', payment_methods.ids)]}}
         return {}
     
-     @api.onchange('date')
-     def _onchange_payment_date(self):
+    @api.onchange('date')
+    def _onchange_payment_date(self):
          if self.date:
              self.fecha_pago = datetime.combine((self.date), datetime.max.time())
 
