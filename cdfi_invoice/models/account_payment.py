@@ -148,10 +148,10 @@ class AccountPayment(models.Model):
             return {'domain': {'payment_method_line_id': [('payment_type', '=', payment_type), ('id', 'in', payment_methods.ids)]}}
         return {}
     
-#     @api.onchange('payment_date')
-#     def _onchange_payment_date(self):
-#         if self.payment_date:
-#             self.fecha_pago = datetime.combine((self.payment_date), datetime.max.time())
+    @api.onchange('date')
+    def _onchange_payment_date(self):
+         if self.date:
+             self.fecha_pago = datetime.combine((self.date), datetime.max.time())
 
     def add_resitual_amounts(self):
         for payment in self:
@@ -166,14 +166,14 @@ class AccountPayment(models.Model):
                     #revisa la cantidad que se va a pagar en el docuemnto
                     if payment.currency_id.name != invoice.moneda:
                         if payment.currency_id.name == 'MXN':
-                            equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001
+                            equivalenciadr = round(invoice.currency_id.with_context(date=payment.date).rate,6) + 0.000001
                         else:
-                            equivalenciadr = float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.payment_date).rate)
+                            equivalenciadr = float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.date).rate)
                     else:
                         if payment.currency_id.name == 'MXN':
                            equivalenciadr = 1
                         else:
-                           equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001 #1
+                           equivalenciadr = round(invoice.currency_id.with_context(date=payment.date).rate,6) + 0.000001 #1
 
                     payment_dict = json.loads(invoice.invoice_payments_widget)
                     payment_content = payment_dict['content']
@@ -253,7 +253,7 @@ class AccountPayment(models.Model):
         res = super(AccountPayment, self).post()
         for rec in self:
             rec.add_resitual_amounts()
-            #rec._onchange_payment_date()
+            rec._onchange_payment_date()
             rec._onchange_journal()
         return res
 
@@ -300,7 +300,7 @@ class AccountPayment(models.Model):
         if self.currency_id.name == 'MXN':
             self.tipocambiop = '1'
         else:
-            self.tipocambiop = self.set_decimals(1 / self.currency_id.with_context(date=self.payment_date).rate, no_decimales_tc)
+            self.tipocambiop = self.set_decimals(1 / self.currency_id.with_context(date=self.date).rate, no_decimales_tc)
 
         timezone = self._context.get('tz')
         if not timezone:
