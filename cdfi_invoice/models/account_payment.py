@@ -162,20 +162,34 @@ class AccountPayment(models.Model):
           docto_relacionados = []
           tax_grouped_tras = {}
           tax_grouped_ret = {}
+          adjust = False
+          total_sum = 0
           if payment.invoice_ids:
+            for invoice_tot in payment.invoice_ids:
+                if invoice_tot.factura_cfdi:
+                    payment_dict = json.loads(invoice_tot.payments_widget)
+                    payment_content = payment_dict['content']
+                    for invoice_payments in payment_content:
+                        if invoice_payments['account_payment_id'] == payment.id:
+                            total_sum += invoice_payments['amount']
+                if payment.currency_id.name != invoice_tot.moneda:
+                    if payment.currency_id.name == 'MXN':
+                        if total_sum / round(invoice_tot.currency_id.with_context(date=payment.payment_date).rate,6)  > payment.amount:
+                            adjust = True
+
             for invoice in payment.invoice_ids:
                 if invoice.factura_cfdi:
                     #revisa la cantidad que se va a pagar en el docuemnto
                     if payment.currency_id.name != invoice.moneda:
                         if payment.currency_id.name == 'MXN':
-                            equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001
+                            if adjust:
+                               equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001
+                            else:
+                               equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6)
                         else:
                             equivalenciadr = float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.payment_date).rate)
                     else:
-                        if payment.currency_id.name == 'MXN':
-                           equivalenciadr = 1
-                        else:
-                           equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001 #1
+                        equivalenciadr = 1
 
                     payment_dict = json.loads(invoice.payments_widget)
                     payment_content = payment_dict['content']
