@@ -172,7 +172,7 @@ class AccountPayment(models.Model):
                             total_sum += invoice_payments['amount']
                 if payment.currency_id.name != invoice_tot.moneda:
                     if payment.currency_id.name == 'MXN':
-                        if round(invoice_tot.currency_id.with_context(date=payment.payment_date).rate,6) * total_sum > payment.amount:
+                        if total_sum / round(invoice_tot.currency_id.with_context(date=payment.payment_date).rate,6)  > payment.amount:
                             adjust = True
 
             for invoice in payment.invoice_ids:
@@ -267,7 +267,7 @@ class AccountPayment(models.Model):
         res = super(AccountPayment, self).post()
         for rec in self:
             rec.add_resitual_amounts()
-            #rec._onchange_payment_date()
+            rec._onchange_payment_date()
             rec._onchange_journal()
         return res
 
