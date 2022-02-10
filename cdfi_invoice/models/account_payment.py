@@ -193,9 +193,9 @@ class AccountPayment(models.Model):
                             total_sum += invoice_payments['amount']
                 if payment.currency_id.name != invoice_tot.moneda:
                     if payment.currency_id.name == 'MXN':
-                        if round(invoice_tot.currency_id.with_context(date=payment.date).rate,6) * total_sum > payment.amount:
+                        if total_sum / round(invoice_tot.currency_id.with_context(date=payment.date).rate,6)  > payment.amount:
                             adjust = True
-          if payment.reconciled_invoice_ids:
+
             for invoice in payment.reconciled_invoice_ids:
                 if invoice.factura_cfdi:
                     #revisa la cantidad que se va a pagar en el docuemnto
