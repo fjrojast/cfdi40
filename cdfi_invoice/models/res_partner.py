@@ -30,8 +30,6 @@ class ResPartner(models.Model):
                    ('D09', _('Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones')),
                    ('D10', _('Pagos por servicios educativos (colegiaturas)')),
                    ('S01', _('Sin efectos fiscales')),
-                   ('CP01', _('Pagos')),
-                   ('CN01', _('Nómina')),
                    ('P01', _('Por definir (obsoleto)')),],
         string=_('Uso CFDI (cliente)'),
     )
