@@ -107,6 +107,7 @@ class AccountPayment(models.Model):
     cep_claveSPEI = fields.Char(string=_('cep_claveSPEI'))
     retencionesp = fields.Text("traslados P",default='[]')
     trasladosp = fields.Text("retenciones P",default='[]')
+    total_pago = fields.Float("Total pagado") 
 
     @api.depends('name')
     def _get_number_folio(self):
@@ -163,42 +164,32 @@ class AccountPayment(models.Model):
           tax_grouped_tras = {}
           tax_grouped_ret = {}
           adjust = False
-          total_sum = 0
+          payment.total_pago = 0
           if payment.invoice_ids:
-            for invoice_tot in payment.invoice_ids:
-                if invoice_tot.factura_cfdi:
-                    payment_dict = json.loads(invoice_tot.payments_widget)
-                    payment_content = payment_dict['content']
-                    for invoice_payments in payment_content:
-                        if invoice_payments['account_payment_id'] == payment.id:
-                            total_sum += invoice_payments['amount']
-                if payment.currency_id.name != invoice_tot.moneda:
-                    if payment.currency_id.name == 'MXN':
-                        if total_sum / round(invoice_tot.currency_id.with_context(date=payment.payment_date).rate,6)  > payment.amount:
-                            adjust = True
-
             for invoice in payment.invoice_ids:
                 if invoice.factura_cfdi:
-                    #revisa la cantidad que se va a pagar en el docuemnto
-                    if payment.currency_id.name != invoice.moneda:
-                        if payment.currency_id.name == 'MXN':
-                            if adjust:
-                               equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6) + 0.000001
-                            else:
-                               equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6)
-                        else:
-                            equivalenciadr = float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.payment_date).rate)
-                    else:
-                        equivalenciadr = 1
 
-                    payment_dict = json.loads(invoice.payments_widget)
+                    payment_dict = json.loads(invoice.invoice_payments_widget)
                     payment_content = payment_dict['content']
                     monto_pagado = 0
                     for invoice_payments in payment_content:
                         if invoice_payments['account_payment_id'] == payment.id:
                             monto_pagado = invoice_payments['amount']
 
+                    #revisa la cantidad que se va a pagar en el docuemnto
+                    if payment.currency_id.name != invoice.moneda:
+                        if payment.currency_id.name == 'MXN':
+                            equivalenciadr = round(invoice.currency_id.with_context(date=payment.payment_date).rate,6)
+                            payment.total_pago += monto_pagado / equivalenciadr
+                        else:
+                            equivalenciadr = round(float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.payment_date).rate),6)
+                            payment.total_pago += monto_pagado / equivalenciadr
+                    else:
+                        equivalenciadr = 1
+                        payment.total_pago += monto_pagado
+
                     paid_pct = monto_pagado / invoice.amount_total
+
                     if not invoice.tax_payment:
                        raise Warning("No hay información de impuestos en el documento. Carga el XML en la factura para agregar los impuestos.")
                     taxes = json.loads(invoice.tax_payment)
@@ -390,7 +381,7 @@ class AccountPayment(models.Model):
                   if line['ImpuestoP'] == '003':
                        totales.update({'TotalRetencionesIEPS': self.set_decimals(line['ImporteP'],2),})
               impuestosp.update({'RetencionesP': retencionp})
-        totales.update({'MontoTotalPagos': self.set_decimals(self.amount * float(self.tipocambiop), 2),})
+        totales.update({'MontoTotalPagos': self.set_decimals(self.total_pago * float(self.tipocambiop), 2),})
 
         pagos = []
         pagos.append({
@@ -398,7 +389,7 @@ class AccountPayment(models.Model):
                       'FormaDePagoP': self.forma_pago,
                       'MonedaP': self.monedap,
                       'TipoCambioP': self.tipocambiop if self.monedap != 'MXN' else '1',
-                      'Monto':  self.set_decimals(self.amount, no_decimales),
+                      'Monto':  self.set_decimals(self.total_pago, no_decimales), #self.set_decimals(self.amount, no_decimales),
                       'NumOperacion': self.numero_operacion,
 
                       'RfcEmisorCtaOrd': self.rfc_banco_emisor if self.forma_pago in ['02', '03', '04', '05', '28', '29'] else '',
