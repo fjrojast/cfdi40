@@ -39,6 +39,8 @@
                                     <field name="tipo_relacion" attrs="{'readonly': [('estado_factura','!=','factura_no_generada')]}"/>
                                     <field name="uuid_relacionado" attrs="{'readonly': [('estado_factura','!=','factura_no_generada')]}"/>
                                 </group>
+                                <group  string="Complementos" name="complementos">
+                                </group>
                             </group>
                     </page>
                 </xpath>
