@@ -180,7 +180,7 @@ class AccountPayment(models.Model):
                             equivalenciadr = round(invoice.currency_id.with_context(date=payment.date).rate,6)
                             payment.total_pago += monto_pagado / equivalenciadr
                         else:
-                            equivalenciadr = float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.date).rate)
+                            equivalenciadr = round(float(invoice.tipocambio)/float(payment.currency_id.with_context(date=payment.date).rate),6)
                             payment.total_pago += monto_pagado / equivalenciadr
                     else:
                         equivalenciadr = 1
