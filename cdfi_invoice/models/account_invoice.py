@@ -405,9 +405,8 @@ class AccountMove(models.Model):
                                       'Impuestos': tax_items and tax_items or '',
                                       'Descuento': self.set_decimals(discount_prod, no_decimales_prod),
                                       'ObjetoImp': line.product_id.objetoimp,
-                                      'InformacionAduanera': pedimentos and pedimentos or '',})
-            if line.predial:
-                invoice_lines.append({'predial': line.predial})
+                                      'InformacionAduanera': pedimentos and pedimentos or '',
+                                      'predial': line.predial and line.predial or '',})
 
         tras_tot = round(tras_tot, no_decimales)
         ret_tot = round(ret_tot, no_decimales)
