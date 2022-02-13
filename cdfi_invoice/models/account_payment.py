@@ -182,7 +182,6 @@ class AccountPayment(models.Model):
           docto_relacionados = []
           tax_grouped_tras = {}
           tax_grouped_ret = {}
-          adjust = False
           payment.total_pago = 0
           if payment.reconciled_invoice_ids:
             for invoice in payment.reconciled_invoice_ids:
