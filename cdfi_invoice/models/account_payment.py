@@ -163,12 +163,11 @@ class AccountPayment(models.Model):
           docto_relacionados = []
           tax_grouped_tras = {}
           tax_grouped_ret = {}
-          adjust = False
           payment.total_pago = 0
           if payment.invoice_ids:
-            for invoice_tot in payment.invoice_ids:
-                if invoice_tot.factura_cfdi:
-                    payment_dict = json.loads(invoice_tot.payments_widget)
+            for invoice in payment.invoice_ids:
+                if invoice.factura_cfdi:
+                    payment_dict = json.loads(invoice.payments_widget)
                     payment_content = payment_dict['content']
                     monto_pagado = 0
                     for invoice_payments in payment_content:
