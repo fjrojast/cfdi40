@@ -242,7 +242,7 @@ class AccountInvoice(models.Model):
         if not self.fecha_factura:
            naive_from = datetime.datetime.now()
         else:
-           naive_from = self.fecha_factura
+           naive_from = datetime.datetime.strptime(self.fecha_factura, "%Y-%m-%d %H:%M:%S")
         local_dt_from = naive_from.replace(tzinfo=pytz.UTC).astimezone(local)
         date_from = local_dt_from.strftime ("%Y-%m-%dT%H:%M:%S")
         if not self.fecha_factura:
