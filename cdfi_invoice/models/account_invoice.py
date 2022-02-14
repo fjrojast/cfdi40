@@ -226,7 +226,7 @@ class AccountInvoice(models.Model):
         if self.partner_id.rfc == 'XAXX010101000':
             nombre = 'PUBLICO GENERAL'
         else:
-            nombre = self.clean_text(self.partner_id.name.upper())
+            nombre = self.partner_id.name.upper()
 
         no_decimales = self.currency_id.no_decimales
         no_decimales_prod = self.currency_id.decimal_places
@@ -274,7 +274,7 @@ class AccountInvoice(models.Model):
                 },
                 'emisor': {
                       'rfc': self.company_id.rfc.upper(),
-                      'nombre': self.clean_text(self.company_id.nombre_fiscal.upper()),
+                      'nombre': self.company_id.nombre_fiscal.upper(),
                       'RegimenFiscal': self.company_id.regimen_fiscal,
                       'FacAtrAdquirente': self.facatradquirente,
                 },
