@@ -327,7 +327,7 @@ class AccountPayment(models.Model):
         if self.partner_id.rfc == 'XAXX010101000':
             nombre = 'PUBLICO GENERAL'
         else:
-            nombre = self.clean_text(self.partner_id.name.upper())
+            nombre = self.partner_id.name.upper()
 
         conceptos = []
         conceptos.append({
@@ -415,7 +415,7 @@ class AccountPayment(models.Model):
                 },
                 'emisor': {
                       'rfc': self.company_id.rfc.upper(),
-                      'nombre': self.clean_text(self.company_id.nombre_fiscal.upper()),
+                      'nombre': self.company_id.nombre_fiscal.upper(),
                       'RegimenFiscal': self.company_id.regimen_fiscal,
                 },
                 'receptor': {
