@@ -226,16 +226,16 @@ class AccountPayment(models.Model):
                                          'ImporteDR': payment.set_decimals(importedr * paid_pct,2) if traslado['TipoFactor'] != 'Exento' else '',
                                          })
                            key = traslado['tax_id']
-                           val = {'BaseP': round(float(traslado['base']) * paid_pct,2) / equivalenciadr,
+                           val = {'BaseP': payment.truncate(round(float(traslado['base']) * paid_pct,2) / equivalenciadr, 6),
                                   'ImpuestoP': traslado['impuesto'],
                                   'TipoFactorP': traslado['TipoFactor'],
                                   'TasaOCuotaP': traslado['tasa'],
-                                  'ImporteP': round(importedr * paid_pct,2) / equivalenciadr,}
+                                  'ImporteP': payment.truncate(round(importedr * paid_pct,2) / equivalenciadr, 6),}
                            if key not in tax_grouped_tras:
                                tax_grouped_tras[key] = val
                            else:
-                               tax_grouped_tras[key]['BaseP'] += round(float(traslado['base']) * paid_pct,2) / equivalenciadr
-                               tax_grouped_tras[key]['ImporteP'] += round(float(traslado['importe']) * paid_pct,2) / equivalenciadr
+                               tax_grouped_tras[key]['BaseP'] += payment.truncate(round(float(traslado['base']) * paid_pct,2) / equivalenciadr,6)
+                               tax_grouped_tras[key]['ImporteP'] += payment.truncate(round(float(traslado['importe']) * paid_pct,2) / equivalenciadr,6)
                     if "retenciones" in taxes:
                        objetoimpdr = '02'
                        retenciones = taxes['retenciones']
@@ -248,11 +248,11 @@ class AccountPayment(models.Model):
                                          })
                            key = retencion['tax_id']
                            val = {'ImpuestoP': retencion['impuesto'],
-                                  'ImporteP': round(float(retencion['importe']) * paid_pct,2) / equivalenciadr,}
+                                  'ImporteP': payment.truncate(round(float(retencion['importe']) * paid_pct,2) / equivalenciadr, 6),}
                            if key not in tax_grouped_ret:
                                tax_grouped_ret[key] = val
                            else:
-                               tax_grouped_ret[key]['ImporteP'] += round(float(retencion['importe']) * paid_pct,2) / equivalenciadr
+                               tax_grouped_ret[key]['ImporteP'] += payment.truncate(round(float(retencion['importe']) * paid_pct,2) / equivalenciadr, 6)
 
                     if objetoimpdr == '02' and not trasladodr and not retenciondr:
                        raise Warning("No hay información de impuestos en el documento. Carga el XML en la factura para agregar los impuestos.")
@@ -369,6 +369,7 @@ class AccountPayment(models.Model):
         taxes_retenciones = json.loads(self.retencionesp)
         impuestosp = {}
         totales = {}
+        self.total_pago = 0
         if taxes_traslado or taxes_retenciones:
            retencionp = []
            trasladop = []
@@ -391,6 +392,10 @@ class AccountPayment(models.Model):
                                        'TotalTrasladosImpuestoIVA0': self.set_decimals(line['ImporteP'] * float(self.tipocambiop),2),})
                   if line['ImpuestoP'] == '002' and line['TipoFactorP'] == 'Exento':
                        totales.update({'TotalTrasladosBaseIVAExento': self.set_decimals(line['BaseP'] * float(self.tipocambiop),2),})
+                  if line['TipoFactorP'] != 'Exento':
+                     self.total_pago += round(line['BaseP'] * float(self.tipocambiop),2) + round(line['ImporteP'] * float(self.tipocambiop),2)
+                  else:
+                     self.total_pago += round(line['BaseP'] * float(self.tipocambiop),2)
               impuestosp.update({'TrasladosP': trasladop})
            if taxes_retenciones:
               for line in taxes_retenciones.values():
@@ -403,8 +408,10 @@ class AccountPayment(models.Model):
                        totales.update({'TotalRetencionesISR': self.set_decimals(line['ImporteP'],2),})
                   if line['ImpuestoP'] == '003':
                        totales.update({'TotalRetencionesIEPS': self.set_decimals(line['ImporteP'],2),})
+                  self.total_pago -= round(line['ImporteP'] * float(self.tipocambiop),2)
+                  #self.total_pago -= round(line['BaseP'] * float(self.tipocambiop),2) + round(line['ImporteP'] * float(self.tipocambiop),2)
               impuestosp.update({'RetencionesP': retencionp})
-        totales.update({'MontoTotalPagos': self.set_decimals(self.total_pago * float(self.tipocambiop), 2),})
+        totales.update({'MontoTotalPagos': self.set_decimals(self.total_pago, 2),})
 
         pagos = []
         pagos.append({
@@ -412,7 +419,8 @@ class AccountPayment(models.Model):
                       'FormaDePagoP': self.forma_pago,
                       'MonedaP': self.monedap,
                       'TipoCambioP': self.tipocambiop if self.monedap != 'MXN' else '1',
-                      'Monto':  self.set_decimals(self.total_pago, no_decimales), #self.set_decimals(self.amount, no_decimales),
+                      'Monto':  self.set_decimals(self.total_pago/float(self.tipocambiop), no_decimales),
+#                      'Monto':  self.set_decimals(self.total_pago, no_decimales) if self.monedap == 'MXN' else self.set_decimals(self.total_pago/float(self.tipocambiop), no_decimales),
                       'NumOperacion': self.numero_operacion,
 
                       'RfcEmisorCtaOrd': self.rfc_banco_emisor if self.forma_pago in ['02', '03', '04', '05', '28', '29'] else '',
@@ -728,6 +736,20 @@ class AccountPayment(models.Model):
                                                 })
                 p.write({'estado_pago': json_response['estado_factura']})
                 p.message_post(body="CFDI Cancelado")
+
+    def truncate(self, number, decimals=0):
+        """
+        Returns a value truncated to a specific number of decimal places.
+        """
+        if not isinstance(decimals, int):
+            raise TypeError("decimal places must be an integer.")
+        elif decimals < 0:
+            raise ValueError("decimal places has to be 0 or more.")
+        elif decimals == 0:
+            return math.trunc(number)
+
+        factor = 10.0 ** decimals
+        return math.trunc(number * factor) / factor
 
 class AccountPaymentMail(models.Model):
     _name = "account.payment.mail"
