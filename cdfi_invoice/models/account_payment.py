@@ -13,6 +13,7 @@ from datetime import date,datetime, timedelta
 import pytz
 from .tzlocal import get_localzone
 from odoo import tools
+import math
 
 class AccountPayment(models.Model):
     _inherit = 'account.payment'
