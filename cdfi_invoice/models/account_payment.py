@@ -14,8 +14,6 @@ import pytz
 from .tzlocal import get_localzone
 import os
 import math
-import logging
-_logger = logging.getLogger(__name__)
 
 class AccountPayment(models.Model):
     _inherit = 'account.payment'
