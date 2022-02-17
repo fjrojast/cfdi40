@@ -13,8 +13,7 @@ from datetime import datetime
 import pytz
 from .tzlocal import get_localzone
 import os
-import logging
-_logger = logging.getLogger(__name__)
+import math
 
 class AccountRegisterPayment(models.TransientModel):
     _inherit = 'account.payment.register'
