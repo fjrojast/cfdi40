@@ -145,7 +145,7 @@ class AccountInvoice(models.Model):
                                                            date=date, description=description, journal_id=journal_id)
         if invoice.estado_factura == 'factura_correcta':
             values['uuid_relacionado'] = invoice.folio_fiscal
-            values['methodo_pago'] = invoice.methodo_pago
+            values['methodo_pago'] = 'PUE'
             values['forma_pago'] = invoice.forma_pago
             values['tipo_comprobante'] = 'E'
             values['uso_cfdi'] = 'G02'
