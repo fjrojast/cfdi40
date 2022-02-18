@@ -92,7 +92,7 @@ class AccountMove(models.Model):
         values = super(AccountMove, self)._reverse_move_vals(default_values, cancel)
         if self.estado_factura == 'factura_correcta':
             values['uuid_relacionado'] = self.folio_fiscal
-            values['methodo_pago'] = self.methodo_pago
+            values['methodo_pago'] = 'PUE'
             values['forma_pago_id'] = self.forma_pago_id.id
             values['tipo_comprobante'] = 'E'
             values['uso_cfdi_id'] = self.env['catalogo.uso.cfdi'].sudo().search([('code','=','G02')]).id
