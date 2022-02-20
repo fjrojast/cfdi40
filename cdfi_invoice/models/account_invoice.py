@@ -520,28 +520,6 @@ class AccountInvoice(models.Model):
 
         request_params.update({'conceptos': invoice_lines})
 
-        #if not self.company_id.archivo_cer:
-        #    self.write({'proceso_timbrado': False})
-        #    self.env.cr.commit()
-        #    raise UserError(_('El archivo del certificado .cer no se encuentra.'))
-        #if not self.company_id.archivo_key:
-        #    self.write({'proceso_timbrado': False})
-        #    self.env.cr.commit()
-        #    raise UserError(_('El archivo del certificado .key no se encuentra.'))
-        #if not self.company_id.contrasena:
-        #    self.write({'proceso_timbrado': False})
-        #    self.env.cr.commit()
-        #    raise UserError(_('La contraseña del certificado no se encuentra.'))
-        #archivo_cer = self.company_id.archivo_cer
-        #archivo_key = self.company_id.archivo_key
-        #request_params.update({
-        #    'certificados': {
-               # 'archivo_cer': archivo_cer.decode("utf-8"),
-               # 'archivo_key': archivo_key.decode("utf-8"),
-        #        'contrasena': self.company_id.contrasena,
-        #    }})
-
-        #_logger.info('xml: ', json.dumps(request_params))
         return request_params
 
     def set_decimals(self, amount, precision):
@@ -736,12 +714,6 @@ class AccountInvoice(models.Model):
                 if invoice.estado_factura == 'factura_cancelada':
                     pass
                     # raise UserError(_('La factura ya fue cancelada, no puede volver a cancelarse.'))
-                #if not invoice.company_id.archivo_cer:
-                #    raise UserError(_('Falta la ruta del archivo .cer'))
-                #if not invoice.company_id.archivo_key:
-                #    raise UserError(_('Falta la ruta del archivo .key'))
-                #archivo_cer = self.company_id.archivo_cer
-                #archivo_key = self.company_id.archivo_key
                 if not invoice.company_id.contrasena:
                   raise UserError(_('El campo de contraseña de los certificados está vacío.'))
                 archivo_xml_link = invoice.company_id.factura_dir + '/' + invoice.move_name.replace('/', '_') + '.xml'
@@ -752,7 +724,7 @@ class AccountInvoice(models.Model):
                     'api_key': invoice.company_id.proveedor_timbrado,
                     'uuid': invoice.folio_fiscal,
                     'folio': invoice.move_name.replace('INV','').replace('/',''),
-                    'serie_factura':  self.journal_id.serie_diario or self.company_id.serie_factura,
+                    'serie_factura': invoice.journal_id.serie_diario or invoice.company_id.serie_factura,
                     'modo_prueba': invoice.company_id.modo_prueba,
                     'certificados': {
                     #    'archivo_cer': archivo_cer.decode("utf-8"),
@@ -760,8 +732,8 @@ class AccountInvoice(models.Model):
                         'contrasena': invoice.company_id.contrasena,
                     },
                     'xml': archivo_xml.decode("utf-8"),
-                          'motivo': self.env.context.get('motivo_cancelacion',False),
-                          'foliosustitucion': self.env.context.get('foliosustitucion',''),
+                    'motivo': self.env.context.get('motivo_cancelacion',False),
+                    'foliosustitucion': self.env.context.get('foliosustitucion',''),
                 }
                 if self.company_id.proveedor_timbrado == 'multifactura':
                     url = '%s' % ('http://facturacion.itadmin.com.mx/api/refund')
