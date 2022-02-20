@@ -752,7 +752,7 @@ class AccountInvoice(models.Model):
                     'api_key': invoice.company_id.proveedor_timbrado,
                     'uuid': invoice.folio_fiscal,
                     'folio': invoice.move_name.replace('INV','').replace('/',''),
-                    'serie_factura':  self.journal_id.serie_diario or self.company_id.serie_factura,
+                    'serie_factura': invoice.journal_id.serie_diario or invoice.company_id.serie_factura,
                     'modo_prueba': invoice.company_id.modo_prueba,
                     'certificados': {
                     #    'archivo_cer': archivo_cer.decode("utf-8"),
@@ -760,8 +760,8 @@ class AccountInvoice(models.Model):
                         'contrasena': invoice.company_id.contrasena,
                     },
                     'xml': archivo_xml.decode("utf-8"),
-                          'motivo': self.env.context.get('motivo_cancelacion',False),
-                          'foliosustitucion': self.env.context.get('foliosustitucion',''),
+                    'motivo': self.env.context.get('motivo_cancelacion',False),
+                    'foliosustitucion': self.env.context.get('foliosustitucion',''),
                 }
                 if self.company_id.proveedor_timbrado == 'multifactura':
                     url = '%s' % ('http://facturacion.itadmin.com.mx/api/refund')
