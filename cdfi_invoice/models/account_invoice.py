@@ -136,6 +136,37 @@ class AccountMove(models.Model):
     )
     proceso_timbrado = fields.Boolean(string=_('Proceso de timbrado'))
     tax_payment = fields.Text(string=_('Taxes'))
+    factura_global = fields.Boolean('Factura global')
+    fg_periodicidad = fields.Selection(
+        selection=[('01', '01 - Diario'),
+                   ('02', '02 - Semanal'),
+                   ('03', '03 - Quincenal'),
+                   ('04', '04 - Mensual'),
+                   ('05', '05 - Bimestral'),],
+        string=_('Periodicidad'),
+    )
+    fg_meses = fields.Selection(
+        selection=[('01', '01 - Enero'),
+                   ('02', '02 - Febrero'),
+                   ('03', '03 - Marzo'),
+                   ('04', '04 - Abril'),
+                   ('05', '05 - Mayo'),
+                   ('06', '06 - Junio'),
+                   ('07', '07 - Julio'),
+                   ('08', '08 - Agosto'),
+                   ('09', '09 - Septiembre'),
+                   ('10', '10 - Octubre'),
+                   ('11', '11 - Noviembre'),
+                   ('12', '12 - Diciembre'),
+                   ('13', '13 - Enero - Febrero'),
+                   ('14', '14 - Marzo - Abril'),
+                   ('15', '15 - Mayo - Junio'),
+                   ('16', '16 - Julio - Agosto'),
+                   ('17', '17 - Septiembre - Octubre'),
+                   ('18', '18 - Noviembre - Diciembre'),],
+        string=_('Periodicidad'),
+    )
+    fg_ano =  fields.Char(string=_('Año'))
 
     @api.model
     def _reverse_move_vals(self,default_values, cancel=True):
@@ -216,8 +247,8 @@ class AccountMove(models.Model):
     
     @api.model
     def to_json(self):
-        if self.partner_id.vat == 'XAXX010101000':
-            nombre = 'PUBLICO GENERAL'
+        if self.partner_id.vat == 'XAXX010101000' and self.factura_global:
+            nombre = 'PUBLICO EN GENERAL'
         else:
             nombre = self.partner_id.name.upper()
 
@@ -288,6 +319,15 @@ class AccountMove(models.Model):
                       'modo_prueba': self.company_id.modo_prueba,
                 },
         }
+
+        if self.factura_global:
+           request_params.update({
+                'InformacionGlobal': {
+                      'Periodicidad': self.fg_periodicidad,
+                      'Meses': self.fg_meses,
+                      'Año': self.fg_ano,
+                },
+           })
 
         if self.uuid_relacionado:
            cfdi_relacionado = []
@@ -393,13 +433,13 @@ class AccountMove(models.Model):
                    if taxes['amount'] >= 0.0:
                       tax_local_tras_tot += taxes['amount']
                       tax_local_tras.append({'ImpLocTrasladado': tax.impuesto_local,
-                                             'TasadeTraslado': self.set_decimals(tax.amount / 100.0,6),
-                                             'Importe': self.set_decimals(taxes['amount'], no_decimales),})
+                                             'TasadeTraslado': self.set_decimals(tax.amount / 100.0,2),
+                                             'Importe': self.set_decimals(taxes['amount'], 2),})
                    else:
                       tax_local_ret_tot += taxes['amount']
                       tax_local_ret.append({'ImpLocRetenido': tax.impuesto_local,
-                                            'TasadeRetencion': self.set_decimals(tax.amount / 100.0 * -1,6),
-                                            'Importe': self.set_decimals(taxes['amount'] * -1, no_decimales),})
+                                            'TasadeRetencion': self.set_decimals(tax.amount / 100.0 * -1,2),
+                                            'Importe': self.set_decimals(taxes['amount'] * -1, 2),})
 
             if tax_tras:
                tax_items.update({'Traslados': tax_tras})
@@ -498,11 +538,18 @@ class AccountMove(models.Model):
 
         if tax_local_ret or tax_local_tras:
            if tax_local_tras and not tax_local_ret:
-               request_params.update({'implocal10': {'TotaldeTraslados': tax_local_tras_tot, 'TotaldeRetenciones': tax_local_ret_tot, 'TrasladosLocales': tax_local_tras,}})
+               request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot, 2),
+                                                     'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot,2), 
+                                                     'TrasladosLocales': self.set_decimals(tax_local_tras,2),}})
            if tax_local_ret and not tax_local_tras:
-               request_params.update({'implocal10': {'TotaldeTraslados': tax_local_tras_tot, 'TotaldeRetenciones': tax_local_ret_tot * -1, 'RetencionesLocales': tax_local_ret,}})
+               request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot,2), 
+                                                     'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot * -1,2), 
+                                                     'RetencionesLocales': self.set_decimals(tax_local_ret,2),}})
            if tax_local_ret and tax_local_tras:
-               request_params.update({'implocal10': {'TotaldeTraslados': tax_local_tras_tot, 'TotaldeRetenciones': tax_local_ret_tot * -1, 'TrasladosLocales': tax_local_tras, 'RetencionesLocales': tax_local_ret,}})
+               request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot,2),
+                                                     'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot * -1,2),
+                                                     'TrasladosLocales': self.set_decimals(tax_local_tras,2),
+                                                     'RetencionesLocales': self.set_decimals(tax_local_ret,2),}})
 
         if self.tipo_comprobante == 'T':
             request_params['factura'].update({'subtotal': '0.00','total': '0.00'})
