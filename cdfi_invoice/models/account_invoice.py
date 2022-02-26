@@ -138,6 +138,37 @@ class AccountInvoice(models.Model):
     )
     proceso_timbrado = fields.Boolean(string=_('Proceso de timbrado'))
     tax_payment = fields.Text(string=_('Taxes'))
+    factura_global = fields.Boolean('Factura global')
+    fg_periodicidad = fields.Selection(
+        selection=[('01', '01 - Diario'),
+                   ('02', '02 - Semanal'),
+                   ('03', '03 - Quincenal'),
+                   ('04', '04 - Mensual'),
+                   ('05', '05 - Bimestral'),],
+        string=_('Periodicidad'),
+    )
+    fg_meses = fields.Selection(
+        selection=[('01', '01 - Enero'),
+                   ('02', '02 - Febrero'),
+                   ('03', '03 - Marzo'),
+                   ('04', '04 - Abril'),
+                   ('05', '05 - Mayo'),
+                   ('06', '06 - Junio'),
+                   ('07', '07 - Julio'),
+                   ('08', '08 - Agosto'),
+                   ('09', '09 - Septiembre'),
+                   ('10', '10 - Octubre'),
+                   ('11', '11 - Noviembre'),
+                   ('12', '12 - Diciembre'),
+                   ('13', '13 - Enero - Febrero'),
+                   ('14', '14 - Marzo - Abril'),
+                   ('15', '15 - Mayo - Junio'),
+                   ('16', '16 - Julio - Agosto'),
+                   ('17', '17 - Septiembre - Octubre'),
+                   ('18', '18 - Noviembre - Diciembre'),],
+        string=_('Periodicidad'),
+    )
+    fg_ano =  fields.Char(string=_('Año'))
 
     @api.model
     def _prepare_refund(self, invoice, date_invoice=None, date=None, description=None, journal_id=None):
@@ -223,8 +254,8 @@ class AccountInvoice(models.Model):
     
     @api.model
     def to_json(self):
-        if self.partner_id.rfc == 'XAXX010101000':
-            nombre = 'PUBLICO GENERAL'
+        if self.partner_id.rfc == 'XAXX010101000' and self.factura_global:
+            nombre = 'PUBLICO EN GENERAL'
         else:
             nombre = self.partner_id.name.upper()
 
@@ -295,6 +326,15 @@ class AccountInvoice(models.Model):
                       'modo_prueba': self.company_id.modo_prueba,
                 },
         }
+
+        if self.factura_global:
+           request_params.update({
+                'InformacionGlobal': {
+                      'Periodicidad': self.fg_periodicidad,
+                      'Meses': self.fg_meses,
+                      'Año': self.fg_ano,
+                },
+           })
 
         if self.uuid_relacionado:
            cfdi_relacionado = []
