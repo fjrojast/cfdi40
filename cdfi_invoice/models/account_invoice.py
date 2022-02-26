@@ -440,13 +440,13 @@ class AccountInvoice(models.Model):
                    if taxes['amount'] >= 0.0:
                       tax_local_tras_tot += taxes['amount']
                       tax_local_tras.append({'ImpLocTrasladado': tax.impuesto_local,
-                                             'TasadeTraslado': self.set_decimals(tax.amount / 100.0,6),
-                                             'Importe': self.set_decimals(taxes['amount'], no_decimales),})
+                                             'TasadeTraslado': self.set_decimals(tax.amount / 100.0,2),
+                                             'Importe': self.set_decimals(taxes['amount'], 2),})
                    else:
                       tax_local_ret_tot += taxes['amount']
                       tax_local_ret.append({'ImpLocRetenido': tax.impuesto_local,
-                                            'TasadeRetencion': self.set_decimals(tax.amount / 100.0 * -1,6),
-                                            'Importe': self.set_decimals(taxes['amount'] * -1, no_decimales),})
+                                            'TasadeRetencion': self.set_decimals(tax.amount / 100.0 * -1,2),
+                                            'Importe': self.set_decimals(taxes['amount'] * -1, 2),})
 
             if tax_tras:
                tax_items.update({'Traslados': tax_tras})
@@ -545,11 +545,18 @@ class AccountInvoice(models.Model):
 
         if tax_local_ret or tax_local_tras:
            if tax_local_tras and not tax_local_ret:
-               request_params.update({'implocal10': {'TotaldeTraslados': tax_local_tras_tot, 'TotaldeRetenciones': tax_local_ret_tot, 'TrasladosLocales': tax_local_tras,}})
+               request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot, 2),
+                                                     'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot,2), 
+                                                     'TrasladosLocales': self.set_decimals(tax_local_tras,2),}})
            if tax_local_ret and not tax_local_tras:
-               request_params.update({'implocal10': {'TotaldeTraslados': tax_local_tras_tot, 'TotaldeRetenciones': tax_local_ret_tot * -1, 'RetencionesLocales': tax_local_ret,}})
+               request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot,2), 
+                                                     'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot * -1,2), 
+                                                     'RetencionesLocales': self.set_decimals(tax_local_ret,2),}})
            if tax_local_ret and tax_local_tras:
-               request_params.update({'implocal10': {'TotaldeTraslados': tax_local_tras_tot, 'TotaldeRetenciones': tax_local_ret_tot * -1, 'TrasladosLocales': tax_local_tras, 'RetencionesLocales': tax_local_ret,}})
+               request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot,2),
+                                                     'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot * -1,2),
+                                                     'TrasladosLocales': self.set_decimals(tax_local_tras,2),
+                                                     'RetencionesLocales': self.set_decimals(tax_local_ret,2),}})
 
         if self.tipo_comprobante == 'T':
             request_params['factura'].update({'subtotal': '0.00','total': '0.00'})
@@ -560,28 +567,6 @@ class AccountInvoice(models.Model):
 
         request_params.update({'conceptos': invoice_lines})
 
-        #if not self.company_id.archivo_cer:
-        #    self.write({'proceso_timbrado': False})
-        #    self.env.cr.commit()
-        #    raise UserError(_('El archivo del certificado .cer no se encuentra.'))
-        #if not self.company_id.archivo_key:
-        #    self.write({'proceso_timbrado': False})
-        #    self.env.cr.commit()
-        #    raise UserError(_('El archivo del certificado .key no se encuentra.'))
-        #if not self.company_id.contrasena:
-        #    self.write({'proceso_timbrado': False})
-        #    self.env.cr.commit()
-        #    raise UserError(_('La contraseña del certificado no se encuentra.'))
-        #archivo_cer = self.company_id.archivo_cer
-        #archivo_key = self.company_id.archivo_key
-        #request_params.update({
-        #    'certificados': {
-               # 'archivo_cer': archivo_cer.decode("utf-8"),
-               # 'archivo_key': archivo_key.decode("utf-8"),
-        #        'contrasena': self.company_id.contrasena,
-        #    }})
-
-        #_logger.info('xml: ', json.dumps(request_params))
         return request_params
 
     def set_decimals(self, amount, precision):
@@ -776,12 +761,6 @@ class AccountInvoice(models.Model):
                 if invoice.estado_factura == 'factura_cancelada':
                     pass
                     # raise UserError(_('La factura ya fue cancelada, no puede volver a cancelarse.'))
-                #if not invoice.company_id.archivo_cer:
-                #    raise UserError(_('Falta la ruta del archivo .cer'))
-                #if not invoice.company_id.archivo_key:
-                #    raise UserError(_('Falta la ruta del archivo .key'))
-                #archivo_cer = self.company_id.archivo_cer
-                #archivo_key = self.company_id.archivo_key
                 if not invoice.company_id.contrasena:
                   raise UserError(_('El campo de contraseña de los certificados está vacío.'))
                 archivo_xml_link = invoice.company_id.factura_dir + '/' + invoice.move_name.replace('/', '_') + '.xml'
