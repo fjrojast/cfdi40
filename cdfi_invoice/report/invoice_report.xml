@@ -168,6 +168,9 @@
 						    	 <div>
 								    <span t-field="o.partner_id.rfc" />
 								</div>
+								<div>
+						     		Regimen fiscal: <span t-field="o.partner_id.regimen_fiscal"/> C.P <span t-field="o.partner_id.zip"/>
+						 	 	</div>
 							     <div>
 						    	    Uso CFDI: <span t-field="o.uso_cfdi" />
 						         </div>
