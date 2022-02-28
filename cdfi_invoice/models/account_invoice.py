@@ -547,16 +547,16 @@ class AccountInvoice(models.Model):
            if tax_local_tras and not tax_local_ret:
                request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot, 2),
                                                      'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot,2), 
-                                                     'TrasladosLocales': self.set_decimals(tax_local_tras,2),}})
+                                                     'TrasladosLocales': tax_local_tras,}})
            if tax_local_ret and not tax_local_tras:
                request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot,2), 
                                                      'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot * -1,2), 
-                                                     'RetencionesLocales': self.set_decimals(tax_local_ret,2),}})
+                                                     'RetencionesLocales': tax_local_ret,}})
            if tax_local_ret and tax_local_tras:
                request_params.update({'implocal10': {'TotaldeTraslados': self.set_decimals(tax_local_tras_tot,2),
                                                      'TotaldeRetenciones': self.set_decimals(tax_local_ret_tot * -1,2),
-                                                     'TrasladosLocales': self.set_decimals(tax_local_tras,2),
-                                                     'RetencionesLocales': self.set_decimals(tax_local_ret,2),}})
+                                                     'TrasladosLocales': tax_local_tras,
+                                                     'RetencionesLocales': tax_local_ret,}})
 
         if self.tipo_comprobante == 'T':
             request_params['factura'].update({'subtotal': '0.00','total': '0.00'})
